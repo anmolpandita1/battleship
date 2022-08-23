@@ -1,10 +1,50 @@
 package battleship;
 
-import java.util.*;
+import java.util.Scanner;
+
+class Coordinate {
+    private int x;
+    private int y;
+
+    Coordinate(String coordinate) {
+        int[] xy = this.resolve(coordinate);
+        if (xy != null) {
+            this.x = xy[0];
+            this.y = xy[1];
+        }
+    }
+
+
+
+    public boolean isValidCoordinate(int x, int y) throws Exception {
+        if (x < 0 || x >= Board.ROWS || y < 0 || y > Board.COLS) {
+            throw new Exception("Error! You entered the wrong coordinates! Try again:\n");
+        } else {
+            return true;
+        }
+    }
+
+    public int[] resolve(String coordinate) {
+        int resolvedXToInt = coordinate.charAt(0) - 'A';
+        int resolvedYToInt = Integer.parseInt(coordinate.substring(1));
+        try {
+            boolean isValidCoordinate = isValidCoordinate(resolvedXToInt, resolvedYToInt);
+            if (isValidCoordinate) return new int[]{resolvedXToInt, resolvedYToInt};
+        } catch (Exception e) {
+            System.out.print(e.getMessage());
+        }
+        return null;
+    }
+
+    public int[] getCoordinate() {
+        return new int[]{x, y};
+    }
+
+}
 
 class Ship {
-    private String name;
-    private int length;
+    private final String name;
+    private final int length;
 
     Ship(String name, int length) {
         this.name = name;
@@ -18,15 +58,11 @@ class Ship {
     public int getLength() {
         return this.length;
     }
-
-    public boolean isValidLength(int length) {
-        return this.length == length;
-    }
 }
 
 class Board {
-    private final int ROWS = 10;
-    private final int COLS = 10;
+    public static final int ROWS = 10;
+    public static final int COLS = 10;
 
     public char[][] board = new char[ROWS][COLS];
 
@@ -94,27 +130,64 @@ class Board {
 
     }
 
+    public void shoot(int x, int y) {
+        if (this.board[x][y] == 'O') {
+            this.board[x][y] = 'X';
+            this.printBoard();
+            System.out.print("You hit a ship!\n");
+        } else {
+            this.board[x][y] = 'M';
+            this.printBoard();
+            System.out.print("You missed!\n");
+        }
+    }
+
 
 }
 
 
 public class Main {
 
-    public static int[] resolveCoordinates(Ship ship) {
+    public static int[][] getShipCoordinatesFromStdInFor(Ship ship) {
         System.out.print("Enter the coordinates of the " + ship.getName() + " (" + ship.getLength() + " cells):\n");
+
+        int[][] coordinates = new int[2][2];
+        int[] coordinatesX1Y1 = new int[2];
+        int[] coordinatesX2Y2 = new int[2];
         Scanner input = new Scanner(System.in);
+
         if (input.hasNext()) {
-            String[] splitInput = input.nextLine().split(" ");
+            String[] splitStdInput = input.nextLine().split(" ");
+            try {
+                coordinatesX1Y1 = resolveCoordinate(splitStdInput[0]);
+                coordinatesX2Y2 = resolveCoordinate(splitStdInput[1]);
+                coordinates[0][0] = coordinatesX1Y1[0];
+                coordinates[0][1] = coordinatesX1Y1[1];
+                coordinates[1][0] = coordinatesX2Y2[0];
+                coordinates[1][1] = coordinatesX2Y2[1];
+            } catch (Exception e) {
+                System.out.print(e.getMessage());
+            }
 
-            int x1 = splitInput[0].charAt(0) - 'A';
-            int y1 = Integer.parseInt(splitInput[0].substring(1));
-            int x2 = splitInput[1].charAt(0) - 'A';
-            int y2 = Integer.parseInt(splitInput[1].substring(1));
-
-            return new int[]{x1, y1, x2, y2};
         }
         input.close();
-        return new int[]{};
+
+        return coordinates;
+    }
+
+    public static int[] getOneCoordinateStringFromStdIn() throws Exception {
+        Scanner input = new Scanner(System.in);
+        int[] coordinate = null;
+        if (input.hasNext()) {
+            coordinate = resolveCoordinate(input.nextLine());
+        }
+        input.close();
+        return coordinate;
+    }
+
+    public static int[] resolveCoordinate(String coordinateString) throws Exception {
+        Coordinate inputCoordinate = new Coordinate(coordinateString);
+        return inputCoordinate.getCoordinate();
     }
 
 
@@ -130,17 +203,17 @@ public class Main {
         ships[3] = new Ship("Cruiser", 3);
         ships[4] = new Ship("Destroyer", 2);
 
-        // start
+        // place ships
         for (int i = 0; i < ships.length; i++) {
-            int[] coordinates = resolveCoordinates(ships[i]);
-
-            int x1 = coordinates[0];
-            int y1 = coordinates[1];
-            int x2 = coordinates[2];
-            int y2 = coordinates[3];
-
 
             try {
+                int[][] coordinates = getShipCoordinatesFromStdInFor(ships[i]);
+
+                int x1 = coordinates[0][0];
+                int y1 = coordinates[0][1];
+                int x2 = coordinates[1][0];
+                int y2 = coordinates[1][1];
+
                 board.placeShip(x1, y1, x2, y2, ships[i], 'O');
                 board.printBoard();
             } catch (Exception e) {
@@ -149,26 +222,25 @@ public class Main {
             }
         }
 
+        // start
+        System.out.println("The game starts!");
+        board.printBoard();
+        System.out.println("Take a shot!");
+
+        // shoot
+        for (int i = 0; i < 2; i++) {
+            try {
+                int[] shootingCoordinates = getOneCoordinateStringFromStdIn();
+                board.shoot(shootingCoordinates[0], shootingCoordinates[1] - 1);
+            } catch (Exception e) {
+                --i;
+                System.out.print(e.getMessage());
+            }
+        }
+
+
     }
 }
 
 
 
-
-/*
-public void placeAircraftCarrier(int x1, int y1, int x2, int y2, char value){
-        placeShip(x1 , y1 - 1, x2 , y2 - 1, value); //adjust for array size
-    }
-    public void placeBattleship(int x1, int y1, int x2, int y2, char value){
-
-    }
-    public void placeSubmarine(int x1, int y1, int x2, int y2, char value){
-
-    }
-    public void placeCruiser(int x1, int y1, int x2, int y2, char value){
-
-    }
-    public void placeDestroyer(int x1, int y1, int x2, int y2, char value){
-
-    }
- */
